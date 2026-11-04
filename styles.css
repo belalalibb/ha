@@ -676,6 +676,23 @@ textarea.mini {
   line-height: 1;
 }
 
+
+/* نقطة تحذير صغيرة على زرار المساعدة لو المزامنة فيها مشكلة */
+.btn-help { position: relative; }
+
+body[data-sync="pending"] .btn-help::after,
+body[data-sync="err"] .btn-help::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  inset-inline-end: 3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--danger);
+  border: 2px solid var(--bg);
+}
+
 /* ======================= لمس أسهل للجميع ======================= */
 @media (pointer: coarse) {
   .btn, .mini { border-width: max(3px, .5vmin); }

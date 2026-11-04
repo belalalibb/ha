@@ -1,12 +1,13 @@
 /* وسيلة — Service Worker بسيط: تخزين الملفات عشان تفتح من غير نت */
-var CACHE = 'wasila-v6';
+var CACHE = 'wasila-v7';
 var FILES = [
   './',
   './index.html',
-  './styles.css?v=6',
-  './app.js?v=6',
-  './data.js?v=6',
-  './icons.js?v=6',
+  './styles.css?v=7',
+  './sync.js?v=7',
+  './app.js?v=7',
+  './data.js?v=7',
+  './icons.js?v=7',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',
