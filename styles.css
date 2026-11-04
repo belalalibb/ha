@@ -1,0 +1,688 @@
+/* ============================================================
+   وسيلة — ستايل واحد، تباين عالي، RTL، بدون أي مكتبة
+   القاعدة: أسود على أبيض (أو العكس في الوضع الليلي)، ومفيش رمادي فاتح
+   ============================================================ */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+:root {
+  --bg: #ffffff;
+  --fg: #111111;
+  --soft: #f2f2f2;
+  --line: #111111;
+  --danger: #b00020;
+
+  --icon: clamp(28px, 9vmin, 130px);
+  --label: clamp(16px, 4.4vmin, 64px);
+  --num: clamp(12px, 2.8vmin, 40px);
+  --gap: clamp(6px, 1.6vmin, 18px);
+  --radius: clamp(10px, 2vmin, 22px);
+  --bar: clamp(46px, 8.5vmin, 84px);
+}
+
+body.dark {
+  --bg: #000000;
+  --fg: #ffffff;
+  --soft: #141414;
+  --line: #ffffff;
+  --danger: #ff5252;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, "Noto Naskh Arabic", "Traditional Arabic", Arial, sans-serif;
+  font-weight: 700;
+}
+
+.app {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: var(--gap);
+  padding: calc(var(--gap) + env(safe-area-inset-top)) var(--gap)
+           calc(var(--gap) + env(safe-area-inset-bottom)) var(--gap);
+}
+
+/* ======================= الشريط العلوي ======================= */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-height: var(--bar);
+}
+
+.btn {
+  font: inherit;
+  font-size: clamp(13px, 2.2vmin, 24px);
+  color: var(--fg);
+  background: var(--bg);
+  border: max(3px, .5vmin) solid var(--line);
+  border-radius: calc(var(--radius) * .7);
+  min-height: var(--bar);
+  padding: 0 clamp(8px, 1.8vmin, 22px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4em;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.btn:active { background: var(--soft); transform: scale(.98); }
+
+.btn-help { min-width: var(--bar); border-radius: 50%; }
+
+.btn-sos {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+
+.crumb {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-size: clamp(14px, 2.4vmin, 26px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: .9;
+}
+
+/* ======================= المربعات ======================= */
+.stage {
+  min-height: 0;
+  position: relative;
+}
+
+.tiles {
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows, 2), minmax(0, 1fr));
+  gap: var(--gap);
+}
+
+.tile {
+  position: relative;
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: max(4px, .75vmin) solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .06em;
+  min-width: 0;
+  min-height: 0;
+  padding: 2%;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform .08s ease;
+}
+
+.tile:active {
+  background: var(--fg);
+  color: var(--bg);
+  transform: scale(.985);
+}
+
+.tile .art,
+.confirm .big .art,
+.sent .art {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tile .ic {
+  width: var(--icon);
+  height: var(--icon);
+  flex: 0 0 auto;
+}
+
+/* الصور: بتتعرض كاملة من غير أي قص — العرض الكامل أهم من التعبئة */
+img.photo {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: calc(var(--radius) * .45);
+  -webkit-user-drag: none;
+}
+
+.tile .art img.photo { width: 100%; height: 100%; }
+
+img.photo.thumb {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 1px solid var(--soft);
+}
+
+img.photo.thumb-big {
+  height: 90px;
+  width: auto;
+  max-width: 100%;
+  border: 2px solid var(--line);
+}
+
+.tile .label {
+  font-size: var(--label);
+  line-height: 1.05;
+  text-align: center;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.tile .num {
+  position: absolute;
+  top: 4%;
+  inset-inline-start: 5%;
+  font-size: var(--num);
+  line-height: 1;
+  min-width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.tile .nurse {
+  position: absolute;
+  top: 4%;
+  inset-inline-end: 5%;
+  font-size: calc(var(--num) * .9);
+  line-height: 1;
+  padding: .3em .45em;
+  border-radius: .4em;
+  border: max(2px, .3vmin) solid currentColor;
+  white-space: nowrap;
+}
+
+.tile .chev {
+  position: absolute;
+  bottom: 3%;
+  inset-inline-end: 5%;
+  font-size: calc(var(--num) * 1.1);
+  opacity: .55;
+  line-height: 1;
+}
+
+.empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: clamp(16px, 3vmin, 30px);
+  padding: 4vmin;
+}
+
+/* ======================= الشريط السفلي ======================= */
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-height: var(--bar);
+}
+
+.btn-back,
+.btn-page {
+  font: inherit;
+  font-size: clamp(14px, 2.4vmin, 26px);
+  color: var(--fg);
+  background: var(--bg);
+  border: max(3px, .5vmin) solid var(--line);
+  border-radius: calc(var(--radius) * .7);
+  min-height: var(--bar);
+  min-width: calc(var(--bar) * 1.4);
+  padding: 0 clamp(10px, 2vmin, 24px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35em;
+  cursor: pointer;
+}
+
+.btn-back .chev { font-size: 1.3em; line-height: 1; }
+.btn-back[disabled],
+.btn-page[disabled] { opacity: .25; cursor: default; }
+
+/* الأسهم: في RTL السهم الحقيقي (›) معناه "التالي" */
+.pager {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  min-height: var(--bar);
+}
+
+.pager button {
+  font: inherit;
+  font-size: clamp(12px, 2vmin, 20px);
+  background: var(--bg);
+  color: var(--fg);
+  border: max(2px, .35vmin) solid var(--line);
+  border-radius: 50%;
+  width: var(--bar);
+  height: var(--bar);
+  cursor: pointer;
+  opacity: .55;
+}
+
+.pager button.on { opacity: 1; background: var(--fg); color: var(--bg); }
+
+/* ======================= شاشة التأكيد ======================= */
+.confirm {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: var(--gap);
+  text-align: center;
+}
+
+.confirm .q {
+  margin: 0;
+  font-size: clamp(16px, 3.4vmin, 40px);
+}
+
+.confirm .big {
+  border: max(4px, .75vmin) solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .1em;
+  min-height: 0;
+  padding: 2%;
+}
+
+.confirm .big .ic {
+  width: calc(var(--icon) * 1.25);
+  height: calc(var(--icon) * 1.25);
+}
+
+.confirm .big .art { flex: 1 1 auto; }
+
+.confirm .big .label {
+  font-size: calc(var(--label) * 1.3);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.confirm .warn {
+  font-size: clamp(12px, 2.2vmin, 22px);
+  border: max(2px, .35vmin) dashed currentColor;
+  border-radius: .5em;
+  padding: .35em .5em;
+}
+
+.confirm .actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+
+.confirm .actions.one { grid-template-columns: 1fr; }
+
+.big-btn {
+  font: inherit;
+  font-size: clamp(18px, 4.2vmin, 52px);
+  min-height: calc(var(--bar) * 1.6);
+  border-radius: var(--radius);
+  border: max(4px, .75vmin) solid var(--line);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .3em;
+  cursor: pointer;
+}
+
+.big-btn.yes { background: var(--fg); color: var(--bg); }
+.big-btn:active { transform: scale(.985); }
+
+/* ======================= شاشة "تم" ======================= */
+.sent {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap);
+  text-align: center;
+}
+
+.sent .ic { width: calc(var(--icon) * 1.2); height: calc(var(--icon) * 1.2); }
+.sent .art { flex: 0 1 auto; max-height: 46vh; }
+.sent .art img.photo { max-height: 46vh; }
+.sent .label { font-size: calc(var(--label) * 1.3); }
+.sent .hint { font-size: clamp(13px, 2.4vmin, 26px); }
+
+/* ======================= شاشات كاملة (إخفاء / طوارئ / مساعدة) ======================= */
+.fullscreen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  color: var(--fg);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--gap) + env(safe-area-inset-top)) var(--gap)
+           calc(var(--gap) + env(safe-area-inset-bottom)) var(--gap);
+  gap: var(--gap);
+  overflow: auto;
+}
+
+.fullscreen.hidden-screen { background: var(--bg); }
+
+.fullscreen.sos-screen { background: var(--danger); color: #fff; }
+
+.fullscreen .sos-title {
+  font-size: clamp(30px, 9vmin, 110px);
+  text-align: center;
+  margin: auto 0 0;
+  line-height: 1.1;
+}
+
+.fullscreen .sos-sub {
+  font-size: clamp(14px, 2.6vmin, 30px);
+  text-align: center;
+  margin: 0 0 auto;
+}
+
+/* زرار الخروج من شاشة الإخفاء — صغير جدًا وشبه مخفي */
+.peek {
+  position: fixed;
+  bottom: env(safe-area-inset-bottom);
+  inset-inline-start: 0;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font-size: 20px;
+  opacity: .12;
+  cursor: pointer;
+  z-index: 60;
+}
+
+/* ======================= المساعدة ======================= */
+.help-sheet {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.help-sheet h2 {
+  font-size: clamp(18px, 3.2vmin, 32px);
+  margin: 0;
+}
+
+.help-sheet ol {
+  margin: 0;
+  padding-inline-start: 1.2em;
+  font-size: clamp(15px, 2.6vmin, 26px);
+  line-height: 1.7;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+  align-items: center;
+}
+
+.row > * { flex: 0 0 auto; }
+
+.spacer { flex: 1 1 auto; }
+
+/* ======================= لوحة أسرة ======================= */
+.sheet {
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding-bottom: 10vmin;
+}
+
+.sheet h2 { font-size: clamp(18px, 3vmin, 30px); margin: 0; }
+.sheet h3 {
+  font-size: clamp(15px, 2.4vmin, 24px);
+  margin: 0;
+  opacity: .85;
+}
+
+.card {
+  border: max(2px, .35vmin) solid var(--line);
+  border-radius: var(--radius);
+  padding: calc(var(--gap) * .8);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--gap) * .7);
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--gap) * .6);
+  border-bottom: 1px solid var(--soft);
+  padding-bottom: calc(var(--gap) * .5);
+}
+
+.item-row .ic { width: 30px; height: 30px; flex: 0 0 auto; }
+
+.item-row .name {
+  flex: 1 1 auto;
+  font-size: clamp(14px, 2.2vmin, 22px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini {
+  font: inherit;
+  font-size: clamp(12px, 1.9vmin, 18px);
+  background: var(--bg);
+  color: var(--fg);
+  border: 2px solid var(--line);
+  border-radius: .5em;
+  padding: .35em .6em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mini.strong { background: var(--fg); color: var(--bg); }
+.mini.danger { color: var(--danger); border-color: var(--danger); }
+
+select.mini, input.mini, textarea.mini { font-weight: 700; }
+
+textarea.mini {
+  width: 100%;
+  min-height: 22vmin;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  direction: ltr;
+  text-align: left;
+}
+
+/* ======================= مودال التعديل ======================= */
+.modal-wrap {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4vmin;
+}
+
+.modal {
+  background: var(--bg);
+  color: var(--fg);
+  border: max(3px, .5vmin) solid var(--line);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 620px;
+  max-height: 92dvh;
+  overflow: auto;
+  padding: calc(var(--gap) * 1.1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.modal label {
+  font-size: clamp(13px, 2.2vmin, 20px);
+  display: flex;
+  align-items: center;
+  gap: .5em;
+}
+
+.modal input[type="text"] {
+  font: inherit;
+  font-size: clamp(15px, 2.6vmin, 24px);
+  width: 100%;
+  padding: .5em .6em;
+  border: 3px solid var(--line);
+  border-radius: .5em;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: calc(var(--gap) * .5);
+  max-height: 34vmin;
+  overflow: auto;
+}
+
+.icon-grid button {
+  aspect-ratio: 1;
+  background: var(--bg);
+  color: var(--fg);
+  border: 2px solid var(--soft);
+  border-radius: .5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.icon-grid button .ic { width: 100%; height: 100%; }
+.icon-grid button.on { border-color: var(--fg); background: var(--soft); }
+
+
+/* إدخال ملف مخفي بصريًا لكن بيفتح عادي على الموبايل */
+.file-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#mPreview { align-items: center; }
+
+
+/* خانتا الصورة والكاميرا جوّه شبكة الأيقونات */
+.icon-grid button.ph {
+  position: relative;
+  flex-direction: column;
+  gap: .15em;
+  padding: 4px;
+  border: 2px dashed var(--fg);
+  background: var(--bg);
+}
+
+.icon-grid button.ph .ph-lab {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.02em;
+}
+
+.icon-grid button.ph img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: .4em;
+}
+
+.icon-grid button.ph.on {
+  border-style: solid;
+  border-width: 3px;
+  background: var(--soft);
+  padding: 2px;
+}
+
+.icon-grid button.ph .ph-x {
+  position: absolute;
+  top: -7px;
+  inset-inline-start: -7px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fg);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* ======================= لمس أسهل للجميع ======================= */
+@media (pointer: coarse) {
+  .btn, .mini { border-width: max(3px, .5vmin); }
+}
+
+/* ======================= طباعة (الكارت الورقي) ======================= */
+@media print {
+  body { background: #fff; color: #000; }
+  .bar, .foot { display: none; }
+}

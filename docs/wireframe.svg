@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="790" viewBox="0 0 800 790" font-family="Tahoma, 'Segoe UI', 'Noto Naskh Arabic', Arial, sans-serif">
+  <rect width="800" height="790" fill="#eef0f3"/>
+
+  <!-- ================= PANEL A : الرئيسية ================= -->
+  <rect x="24" y="24" width="360" height="712" rx="28" fill="#ffffff" stroke="#111111" stroke-width="6"/>
+
+  <!-- top bar -->
+  <rect x="40" y="44" width="92" height="54" rx="12" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+  <text x="86" y="79" font-size="18" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">؟ مساعدة</text>
+
+  <rect x="142" y="44" width="128" height="54" rx="12" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+  <text x="206" y="79" font-size="20" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">إخفاء</text>
+
+  <rect x="280" y="44" width="88" height="54" rx="12" fill="#111111"/>
+  <text x="324" y="79" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle" direction="rtl">طوارئ</text>
+
+  <!-- مربع 1 : وجع -->
+  <rect x="40" y="112" width="158" height="180" rx="16" fill="#ffffff" stroke="#111111" stroke-width="5"/>
+  <circle cx="62" cy="134" r="20" fill="#111111"/>
+  <text x="62" y="142" font-size="24" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+  <polyline points="128,158 110,196 134,196 116,230" fill="none" stroke="#111111" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+  <text x="119" y="272" font-size="28" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">وجع</text>
+
+  <!-- مربع 2 : حران (الحالي - معكوس) -->
+  <rect x="214" y="112" width="158" height="180" rx="16" fill="#111111" stroke="#111111" stroke-width="10"/>
+  <circle cx="236" cy="134" r="20" fill="#ffffff"/>
+  <text x="236" y="142" font-size="24" font-weight="bold" fill="#111111" text-anchor="middle">2</text>
+  <circle cx="290" cy="194" r="19" fill="none" stroke="#ffffff" stroke-width="7"/>
+  <g stroke="#ffffff" stroke-width="6" stroke-linecap="round">
+    <line x1="290" y1="160" x2="290" y2="168"/>
+    <line x1="290" y1="220" x2="290" y2="228"/>
+    <line x1="256" y1="194" x2="264" y2="194"/>
+    <line x1="316" y1="194" x2="324" y2="194"/>
+    <line x1="266" y1="170" x2="272" y2="176"/>
+    <line x1="308" y1="212" x2="314" y2="218"/>
+    <line x1="314" y1="170" x2="308" y2="176"/>
+    <line x1="272" y1="212" x2="266" y2="218"/>
+  </g>
+  <text x="293" y="268" font-size="17" font-weight="bold" fill="#ffffff" text-anchor="middle" direction="rtl">حران / سقعان</text>
+
+  <!-- مربع 3 : عايز حاجة -->
+  <rect x="40" y="310" width="158" height="180" rx="16" fill="#ffffff" stroke="#111111" stroke-width="5"/>
+  <circle cx="62" cy="332" r="20" fill="#111111"/>
+  <text x="62" y="340" font-size="24" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+  <path d="M89 362 L89 396 Q89 410 103 410 L131 410 Q145 410 145 396 L145 362 Z" fill="none" stroke="#111111" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M145 372 Q165 372 165 388 Q165 404 145 402" fill="none" stroke="#111111" stroke-width="7"/>
+  <text x="119" y="470" font-size="24" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">عايز حاجة</text>
+
+  <!-- مربع 4 : مضايقني -->
+  <rect x="214" y="310" width="158" height="180" rx="16" fill="#ffffff" stroke="#111111" stroke-width="5"/>
+  <circle cx="236" cy="332" r="20" fill="#111111"/>
+  <text x="236" y="340" font-size="24" font-weight="bold" fill="#ffffff" text-anchor="middle">4</text>
+  <path d="M290 356 L328 412 L252 412 Z" fill="none" stroke="#111111" stroke-width="8" stroke-linejoin="round"/>
+  <line x1="290" y1="378" x2="290" y2="396" stroke="#111111" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="290" cy="404" r="4.5" fill="#111111"/>
+  <text x="293" y="470" font-size="17" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">مضايقني حاجة</text>
+
+  <!-- bottom action -->
+  <rect x="40" y="512" width="328" height="86" rx="16" fill="#ffffff" stroke="#111111" stroke-width="6"/>
+  <polyline points="86,556 96,566 114,544" fill="none" stroke="#111111" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="212" y="566" font-size="28" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">وقّف واختار</text>
+  <text x="204" y="632" font-size="16" fill="#333333" text-anchor="middle" direction="rtl">المربع الأسود = الاختيار الحالي</text>
+  <text x="204" y="660" font-size="16" fill="#333333" text-anchor="middle" direction="rtl">المسح التلقائي (٣ ثواني) — مقفول افتراضيًا</text>
+  <text x="204" y="688" font-size="16" fill="#333333" text-anchor="middle" direction="rtl">الشاشة مبتقفلش لوحدها</text>
+  <text x="204" y="716" font-size="16" fill="#333333" text-anchor="middle" direction="rtl">لما يشاور → دوس ✓</text>
+
+  <text x="204" y="768" font-size="24" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">١) الشاشة الرئيسية</text>
+
+  <!-- ================= PANEL B : التأكيد ================= -->
+  <rect x="416" y="24" width="360" height="712" rx="28" fill="#ffffff" stroke="#111111" stroke-width="6"/>
+  <text x="596" y="110" font-size="30" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">هو ده اللي قصدك؟</text>
+
+  <rect x="456" y="140" width="280" height="230" rx="18" fill="#f5f5f5" stroke="#111111" stroke-width="4"/>
+  <path d="M548 190 L548 250 Q548 266 564 266 L604 266 Q620 266 620 250 L620 190 Z" fill="none" stroke="#111111" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M620 204 Q648 204 648 228 Q648 252 620 250" fill="none" stroke="#111111" stroke-width="9"/>
+  <text x="596" y="336" font-size="42" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">شراب</text>
+
+  <rect x="440" y="386" width="312" height="112" rx="18" fill="#111111"/>
+  <text x="596" y="458" font-size="36" font-weight="bold" fill="#ffffff" text-anchor="middle" direction="rtl">✔ أيوه كده</text>
+
+  <rect x="440" y="516" width="312" height="112" rx="18" fill="#ffffff" stroke="#111111" stroke-width="7"/>
+  <text x="596" y="588" font-size="34" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">✘ مش قصدي</text>
+
+  <text x="596" y="668" font-size="16" fill="#333333" text-anchor="middle" direction="rtl">بعد «أيوه»: صوت + تسجيل في السجل</text>
+  <text x="596" y="696" font-size="16" fill="#333333" text-anchor="middle" direction="rtl">وبعدها رجوع تلقائي للشاشة الرئيسية</text>
+
+  <text x="596" y="768" font-size="24" font-weight="bold" fill="#111111" text-anchor="middle" direction="rtl">٢) شاشة التأكيد</text>
+</svg>
