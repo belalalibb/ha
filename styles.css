@@ -147,10 +147,48 @@ body {
   transform: scale(.985);
 }
 
+.tile .art,
+.confirm .big .art,
+.sent .art {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .tile .ic {
   width: var(--icon);
   height: var(--icon);
   flex: 0 0 auto;
+}
+
+/* الصور: بتتعرض كاملة من غير أي قص — العرض الكامل أهم من التعبئة */
+img.photo {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: calc(var(--radius) * .45);
+  -webkit-user-drag: none;
+}
+
+.tile .art img.photo { width: 100%; height: 100%; }
+
+img.photo.thumb {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 1px solid var(--soft);
+}
+
+img.photo.thumb-big {
+  height: 90px;
+  width: auto;
+  max-width: 100%;
+  border: 2px solid var(--line);
 }
 
 .tile .label {
@@ -296,6 +334,8 @@ body {
   height: calc(var(--icon) * 1.25);
 }
 
+.confirm .big .art { flex: 1 1 auto; }
+
 .confirm .big .label {
   font-size: calc(var(--label) * 1.3);
   line-height: 1.05;
@@ -348,6 +388,8 @@ body {
 }
 
 .sent .ic { width: calc(var(--icon) * 1.2); height: calc(var(--icon) * 1.2); }
+.sent .art { flex: 0 1 auto; max-height: 46vh; }
+.sent .art img.photo { max-height: 46vh; }
 .sent .label { font-size: calc(var(--label) * 1.3); }
 .sent .hint { font-size: clamp(13px, 2.4vmin, 26px); }
 

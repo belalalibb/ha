@@ -36,7 +36,8 @@
     try { return localStorage.getItem(key); } catch (e) { return null; }
   }
   function write(key, val) {
-    try { localStorage.setItem(key, val); } catch (e) { /* متصفح خاص */ }
+    try { localStorage.setItem(key, val); return true; }
+    catch (e) { return false; }   /* المساحة اتملت أو متصفح خاص */
   }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
@@ -69,7 +70,14 @@
     return [];
   }
 
-  function saveData() { data.meta.updated = today(); write(DATA_KEY, JSON.stringify(data)); }
+  function saveData() {
+    data.meta.updated = today();
+    var ok = write(DATA_KEY, JSON.stringify(data));
+    if (!ok) {
+      notify('مساحة التخزين اتملت. امسح صورة أو اتنين، أو استخدم «مسار صورة» بدل رفعها من الجهاز.');
+    }
+    return ok;
+  }
   function saveSettings() { write(SET_KEY, JSON.stringify(settings)); }
   function saveLogs() { write(LOG_KEY, JSON.stringify(logs.slice(-300))); }
 
@@ -193,12 +201,84 @@
     return false;
   }
 
+  /* ---------------- الصور والأيقونات ---------------- */
+
+  /* لو العنصر له صورة بنعرضها، ولو لأ بنعرض الأيقونة */
+  function mediaHTML(node, cls) {
+    if (node && node.img) {
+      return '<img class="photo ' + (cls || '') + '" src="' + esc(node.img) + '" alt="">';
+    }
+    return icon(node && node.icon);
+  }
+
+  /* كل الصيغ مدعومة: png · jpg · webp · gif · svg · avif · bmp · heic · ico ...
+     الصور الكبيرة بتتصغّر تلقائيًا عشان التطبيق يفضل خفيف */
+  function processImage(file, cb) {
+    if (!file) return cb(null, 'مفيش ملف');
+    var name = String(file.name || '').toLowerCase();
+    var type = String(file.type || '').toLowerCase();
+    var isImage = type.indexOf('image') === 0 ||
+      /\.(png|jpe?g|webp|gif|svg|avif|bmp|ico|heic|heif|tiff?|jfif|pjpeg|apng)$/.test(name);
+    if (!isImage) return cb(null, 'الملف ده مش صورة');
+    if (file.size > 15 * 1024 * 1024) return cb(null, 'الصورة كبيرة جدًا (أكبر من ١٥ ميجा)');
+
+    var fr = new FileReader();
+    fr.onerror = function () { cb(null, 'مش قادر أقرا الملف'); };
+    fr.onload = function () {
+      var dataUrl = String(fr.result);
+      var isVector = type.indexOf('svg') > -1 || /\.svg$/.test(name);
+      var isAnimated = type.indexOf('gif') > -1 || /\.gif$/.test(name);
+
+      /* SVG و GIF بنسيبهم زي ما هم (عشان ميتحولوش لصورة ثابتة) */
+      if (isVector || isAnimated) return cb(dataUrl, null);
+      if (dataUrl.length < 60 * 1024) return cb(dataUrl, null);   /* صغيرة خلاص */
+
+      var im = new Image();
+      im.onload = function () {
+        var max = 900;
+        var w = im.naturalWidth || im.width;
+        var h = im.naturalHeight || im.height;
+        if (!w || !h) return cb(dataUrl, null);
+        var k = Math.min(1, max / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * k));
+        var ch = Math.max(1, Math.round(h * k));
+        try {
+          var c = document.createElement('canvas');
+          c.width = cw; c.height = ch;
+          var ctx = c.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, cw, ch);
+          ctx.drawImage(im, 0, 0, cw, ch);
+          var out = '';
+          try { out = c.toDataURL('image/webp', 0.82); } catch (e1) { out = ''; }
+          if (!out || out.indexOf('data:image/webp') !== 0) {
+            try { out = c.toDataURL('image/jpeg', 0.82); } catch (e2) { out = ''; }
+          }
+          if (!out) return cb(dataUrl, null);
+          cb(out.length < dataUrl.length ? out : dataUrl, null);
+        } catch (e3) {
+          cb(dataUrl, null);
+        }
+      };
+      /* صيغة المتصفح مش فاهمها (زي HEIC على أندرويد) — بنسيب الأصل ولو مش هيتعرض هيظهر بدالها الأيقونة */
+      im.onerror = function () { cb(dataUrl, null); };
+      im.src = dataUrl;
+    };
+    fr.readAsDataURL(file);
+  }
+
+  function imgSize(txt) {
+    if (!txt || txt.indexOf('data:') !== 0) return '';
+    var kb = Math.round((txt.length * 0.75) / 1024);
+    return kb + ' كيلو';
+  }
+
   function tileHTML(it, idx, num) {
     var hasKids = it.options && it.options.length;
     return '<button class="tile" data-i="' + idx + '">' +
       (num ? '<span class="num">' + num + '</span>' : '') +
       (needsNurse(it) ? '<span class="nurse">تمريض</span>' : '') +
-      icon(it.icon) +
+      '<span class="art">' + mediaHTML(it) + '</span>' +
       '<span class="label">' + esc(it.label) + '</span>' +
       (hasKids ? '<span class="chev">‹</span>' : '') +
       '</button>';
@@ -265,7 +345,8 @@
     stage.innerHTML =
       '<div class="confirm">' +
       '<p class="q">هو ده اللي قصدك؟</p>' +
-      '<div class="big">' + icon(it.icon) + '<span class="label">' + esc(it.label) + '</span></div>' +
+      '<div class="big"><span class="art">' + mediaHTML(it) + '</span>' +
+      '<span class="label">' + esc(it.label) + '</span></div>' +
       (needsNurse(it) ? '<div class="warn">اسأل التمريض الأول قبل التنفيذ</div>' : '') +
       '<div class="actions">' +
       '<button class="big-btn yes" id="btnYes">أيوه كده ✓</button>' +
@@ -298,7 +379,7 @@
     crumb.textContent = pathLabel();
     stage.innerHTML =
       '<div class="sent">' +
-      icon(it.icon) +
+      '<span class="art">' + mediaHTML(it) + '</span>' +
       '<div class="label">' + esc(it.label) + '</div>' +
       '<div class="hint">' + (needsNurse(it) ? 'قوله للتمريض الأول' : 'قلناله خلاص') + '</div>' +
       '<button class="big-btn yes" id="btnDone">تمام ✓</button>' +
@@ -481,7 +562,9 @@
       '<button class="mini danger" id="resetAll">رجوع للأصل</button>' +
       '</div>' +
       '<div style="font-size:12px;line-height:1.6">' +
-      'الطريقة: عدّل اللي تحت → «تنزيل data.js» → ارفع الملف مكانه في GitHub → كل الأجهزة تتحدث.' +
+      'الطريقة: عدّل اللي تحت → «تنزيل data.js» → ارفع الملف مكانه في GitHub → كل الأجهزة تتحدث.<br>' +
+      'الصور اللي بترفعها من الجهاز بتتحفظ جوّه نفس الملف (فبيبقى أكبر)، ولو حبيت تخليه خفيف ' +
+      'حط الصور في مجلد images في الريبو واستخدم «مسار صورة» بدل الرفع.' +
       '</div>' +
       '</div>' +
 
@@ -588,7 +671,7 @@
   function nodeRow(node, path, depth, isSection) {
     var pad = 14 + depth * 18;
     return '<div class="item-row" style="padding-inline-start:' + pad + 'px">' +
-      icon(node.icon) +
+      mediaHTML(node, 'thumb') +
       '<span class="name">' + esc(node.label) + (node.nurse ? ' <b style="opacity:.6">(تمريض)</b>' : '') + '</span>' +
       '<button class="mini" data-edit="' + path + '">تعديل</button>' +
       '<button class="mini" data-add="' + path + '">+ خيار</button>' +
@@ -615,6 +698,17 @@
         return '<button data-ic="' + n + '" class="' + (n === picked ? 'on' : '') + '">' + icon(n) + '</button>';
       }).join('') +
       '</div>' +
+      '<div style="font-size:13px;opacity:.75;margin-top:6px">صورة (اختياري) — بتاخد مكان الأيقونة</div>' +
+      '<div class="row">' +
+      '<label class="mini strong" style="cursor:pointer">رفع صورة من الجهاز' +
+      '<input type="file" id="mFile" hidden accept="image/*,.png,.jpg,.jpeg,.jfif,.webp,.gif,.svg,.avif,.bmp,.ico,.heic,.heif,.tif,.tiff,.apng">' +
+      '</label>' +
+      '<button class="mini danger" id="mImgClear">مسح الصورة</button>' +
+      '<span class="spacer"></span><span id="mImgNote" style="font-size:12px;opacity:.7"></span>' +
+      '</div>' +
+      '<input type="text" id="mImgPath" placeholder="أو مسار/رابط: images/water.jpg" value="' +
+        esc(cur.img && cur.img.indexOf('data:') !== 0 ? cur.img : '') + '">' +
+      '<div id="mPreview" class="row"></div>' +
       '<label><input type="checkbox" id="mNurse"' + (cur.nurse ? ' checked' : '') + '> محتاج موافقة تمريض</label>' +
       '<div class="row"><button class="mini strong" id="mSave">حفظ</button>' +
       '<span class="spacer"></span><button class="mini" id="mCancel">إلغاء</button></div>' +
@@ -630,16 +724,59 @@
       });
     });
 
+    /* -------- الصورة -------- */
+    var imgVal = cur.img || '';
+
+    function drawPreview() {
+      var box = document.getElementById('mPreview');
+      var note = document.getElementById('mImgNote');
+      if (!imgVal) {
+        box.innerHTML = '<span style="font-size:12px;opacity:.6">مفيش صورة — هتظهر الأيقونة.</span>';
+        note.textContent = '';
+        return;
+      }
+      box.innerHTML = '<img class="photo thumb-big" src="' + esc(imgVal) + '" alt="">';
+      note.textContent = imgSize(imgVal);
+    }
+
+    drawPreview();
+
+    document.getElementById('mFile').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (!f) return;
+      document.getElementById('mImgNote').textContent = 'بنجهز الصورة…';
+      processImage(f, function (dataUrl, err) {
+        if (err || !dataUrl) {
+          notify(err || 'مش قادر أجهز الصورة');
+          drawPreview();
+          return;
+        }
+        imgVal = dataUrl;
+        document.getElementById('mImgPath').value = '';
+        drawPreview();
+      });
+    });
+
+    document.getElementById('mImgClear').addEventListener('click', function () {
+      imgVal = '';
+      document.getElementById('mImgPath').value = '';
+      drawPreview();
+    });
+
     document.getElementById('mCancel').addEventListener('click', closeModal);
     document.getElementById('mSave').addEventListener('click', function () {
       var label = document.getElementById('mLabel').value.trim();
       if (!label) { document.getElementById('mLabel').focus(); return; }
       var nurse = document.getElementById('mNurse').checked;
-      if (isNew) arr.push({ label: label, icon: picked, nurse: nurse });
+      var typed = document.getElementById('mImgPath').value.trim();
+      var img = typed || imgVal || '';
+      if (isNew) arr.push({ label: label, icon: picked, nurse: nurse, img: img });
       else {
         arr[index].label = label;
         arr[index].icon = picked;
         arr[index].nurse = nurse;
+        if (img) arr[index].img = img;
+        else delete arr[index].img;
       }
       /* قسم جديد لازم يكون له id */
       if (isNew && arr === data.sections) arr[arr.length - 1].id = 's' + Date.now();
@@ -649,6 +786,18 @@
       render();
       renderFamily();
     });
+  }
+
+  /* ------------------------------ تنبيه بسيط */
+  function notify(msg) {
+    closeModal();
+    var wrap = document.createElement('div');
+    wrap.className = 'modal-wrap';
+    wrap.innerHTML = '<div class="modal"><h3>' + esc(msg) + '</h3>' +
+      '<div class="row"><button class="mini strong" id="nOk">تمام</button></div></div>';
+    document.body.appendChild(wrap);
+    modal = wrap;
+    document.getElementById('nOk').addEventListener('click', closeModal);
   }
 
   /* ------------------------------ تأكيد بسيط */
@@ -668,6 +817,7 @@
   /* ------------------------------ تصدير / استيراد */
   function dataFileText() {
     return '/* بيانات وسيلة — ارفع الملف ده على GitHub مكان data.js */\n' +
+      '/* الصور المرفوعة من الجهاز بتتخزن جوّه الملف كـ data URL */\n' +
       'window.APP_DATA = ' + JSON.stringify(cleanData(), null, 2) + ';\n';
   }
 
@@ -750,6 +900,24 @@
       else if (act === 'hide') showHide();
       else if (act === 'sos') showSos();
     });
+
+    /* لو صورة مش بتتعرض في المتصفح ده، بنرجع للأيقونة بدلها */
+    stage.addEventListener('error', function (e) {
+      var t = e.target;
+      if (!t || t.tagName !== 'IMG') return;
+      var host = t.parentNode;
+      if (!host) return;
+      var art = host.classList && host.classList.contains('art') ? host : null;
+      if (!art) { t.style.display = 'none'; return; }
+      var lvl = state.stack.length ? state.stack[state.stack.length - 1].options : data.sections;
+      var node = null;
+      if (state.view === 'confirm' || state.view === 'sent') node = state.pending && state.pending.item;
+      if (!node) {
+        var btn = art.closest('.tile');
+        if (btn) node = lvl[Number(btn.getAttribute('data-i'))];
+      }
+      art.innerHTML = icon(node && node.icon ? node.icon : 'dot');
+    }, true);
 
     document.addEventListener('keydown', function (e) {
       if (overlay || modal) {
