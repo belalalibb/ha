@@ -8,7 +8,7 @@
   'use strict';
 
   /* ------------------------------ مفاتيح التخزين */
-  var VERSION = 'v6';
+  var VERSION = 'v7';
   var DATA_KEY = 'wasila.data.v1';
   var SET_KEY = 'wasila.set.v1';
   var LOG_KEY = 'wasila.log.v1';
@@ -77,6 +77,10 @@
     if (!ok) {
       notify('مساحة التخزين اتملت. امسح صورة أو اتنين، أو استخدم «مسار صورة» بدل رفعها من الجهاز.');
     }
+    /* المزامنة: نرفع في الخلفية من غير ما نعطّل الأهل */
+    if (ok && window.WasilaSync && WasilaSync.isOn()) {
+      try { WasilaSync.queuePush(clone(data)); } catch (e) { }
+    }
     return ok;
   }
   function saveSettings() { write(SET_KEY, JSON.stringify(settings)); }
@@ -141,7 +145,33 @@
   }
 
   /* ------------------------------ رسم */
+  var pendingRemote = null;
+
+  /* نسخة جديدة وصلت من تليفون تاني */
+  function applyRemote(remoteData) {
+    if (!remoteData || !remoteData.sections) return;
+    /* لو فيه نافذة تعديل مفتوحة أو المريض في نص اختيار — بنأجّلها */
+    if ((modal && modal.parentNode) || state.view !== 'main') {
+      pendingRemote = remoteData;
+      return;
+    }
+    data = remoteData;
+    if (!data.meta) data.meta = { version: 1, updated: today() };
+    write(DATA_KEY, JSON.stringify(data));
+    state.stack = [];
+    state.page = 0;
+    state.view = 'main';
+    state.pending = null;
+    render();
+    if (overlay) renderFamily();
+  }
+
   function render() {
+    if (pendingRemote && state.view === 'main' && !(modal && modal.parentNode)) {
+      var r = pendingRemote;
+      pendingRemote = null;
+      return applyRemote(r);
+    }
     clearTimer();
     if (state.view === 'main') renderMain();
     else if (state.view === 'confirm') renderConfirm();
@@ -458,6 +488,11 @@
   function closeModal() {
     if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
     modal = null;
+    if (pendingRemote) {
+      var r = pendingRemote;
+      pendingRemote = null;
+      setTimeout(function () { applyRemote(r); }, 0);
+    }
   }
 
   function makeOverlay(cls, inner) {
@@ -586,6 +621,8 @@
       '<span>' + logs.length + ' تسجيل</span></div>' +
       '</div>' +
 
+      syncCardHTML() +
+
       '<div class="card">' +
       '<h3>حفظ / نقل البيانات</h3>' +
       '<div class="row">' +
@@ -625,6 +662,90 @@
     document.getElementById('clearLogs').addEventListener('click', function () {
       ask('تمسح السجل كله؟', function () { logs = []; saveLogs(); renderFamily(); });
     });
+    /* ---------------- المزامنة ---------------- */
+    var sSave = document.getElementById('syncSave');
+    if (sSave) {
+      sSave.addEventListener('click', function () {
+        var u = document.getElementById('syncUrl').value.trim();
+        var c = document.getElementById('syncCode').value.trim();
+        if (!u || !c) { notify('اكتب رابط السيرفر وكود العيلة الأول.'); return; }
+        var ok = WasilaSync.setConfig(u, c);
+        if (!ok) { notify('رابط السيرفر أو الكود مش مظبوط.'); return; }
+        WasilaSync.start().then(function () {
+          notify('المزامنة اتشغلت ✅ — أي تعديل هيظهر على كل التليفونات.');
+          renderFamily();
+        });
+      });
+    }
+
+    var sGen = document.getElementById('syncGen');
+    if (sGen) {
+      sGen.addEventListener('click', function () {
+        document.getElementById('syncCode').value = WasilaSync.makeCode();
+      });
+    }
+
+    var sNow = document.getElementById('syncNow');
+    if (sNow) {
+      sNow.addEventListener('click', function () {
+        if (!WasilaSync.isOn()) { notify('شغّل المزامنة الأول.'); return; }
+        WasilaSync.pull().then(function (changed) {
+          notify(changed ? 'فيه جديد — اتحدّث ✅' : 'مفيش جديد، كله محدّث.');
+          renderFamily();
+        });
+      });
+    }
+
+    var sLink = document.getElementById('syncLink');
+    if (sLink) {
+      sLink.addEventListener('click', function () {
+        if (!WasilaSync.isOn()) { notify('شغّل المزامنة الأول.'); return; }
+        copyText(WasilaSync.setupLink());
+        notify('اتنسخ لينك الإعداد — ابعته لأي تليفون، هيفتح مظبوط لوحده.');
+      });
+    }
+
+    var sOff = document.getElementById('syncOff');
+    if (sOff) {
+      sOff.addEventListener('click', function () {
+        WasilaSync.stop();
+        renderFamily();
+      });
+    }
+
+    var sUndo = document.getElementById('syncUndo');
+    if (sUndo) {
+      sUndo.addEventListener('click', function () {
+        if (!WasilaSync.isOn()) { notify('المزامنة مش متشغلة.'); return; }
+        WasilaSync.history().then(function (h) {
+          if (!h || !h.length) { notify('مفيش نسخ قديمة لسه.'); return; }
+          var wrap = document.createElement('div');
+          wrap.className = 'modal-wrap';
+          var html = '<div class="modal"><h3>رجوع لنسخة قديمة</h3>';
+          h.slice(0, 6).forEach(function (it) {
+            html += '<div class="item-row"><span class="name">نسخة ' + it.v + ' — ' + timeStr(it.at) + '</span>' +
+              '<button class="mini strong" data-restore="' + it.v + '">رجّعها</button></div>';
+          });
+          html += '<div class="row"><span class="spacer"></span><button class="mini" id="undoClose">إلغاء</button></div></div>';
+          wrap.innerHTML = html;
+          document.body.appendChild(wrap);
+          modal = wrap;
+          document.getElementById('undoClose').addEventListener('click', closeModal);
+          wrap.querySelectorAll('[data-restore]').forEach(function (b) {
+            b.addEventListener('click', function () {
+              var v = Number(b.getAttribute('data-restore'));
+              closeModal();
+              WasilaSync.restore(v).then(function () {
+                notify('رجعت النسخة ' + v + ' ✅');
+                render();
+                renderFamily();
+              }).catch(function () { notify('مش قادر أرجّع النسخة دي.'); });
+            });
+          });
+        }).catch(function () { notify('مش قادر أجيب النسخ القديمة.'); });
+      });
+    }
+
     document.getElementById('expJson').addEventListener('click', exportData);
     document.getElementById('copyJson').addEventListener('click', function () { copyText(dataFileText()); });
     document.getElementById('impFile').addEventListener('change', importData);
@@ -713,6 +834,67 @@
       '<button class="mini" data-add="' + path + '">+ خيار</button>' +
       '<button class="mini danger" data-del="' + path + '">مسح</button>' +
       '</div>';
+  }
+
+  /* ============================================================
+     واجهة المزامنة
+     ============================================================ */
+  function timeStr(ts) {
+    if (!ts) return '—';
+    var d = new Date(Number(ts));
+    return pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function syncStateText() {
+    if (!window.WasilaSync) return 'المزامنة مش موجودة في النسخة دي.';
+    var st = WasilaSync.status();
+    var cfg = WasilaSync.config();
+    if (!WasilaSync.isOn()) return 'مش متشغلة — التعديلات بتتحفظ على التليفون ده بس.';
+    if (st.status === 'err') return 'مش قادر يوصل للسيرفر — هيحاول تاني لوحده.';
+    if (st.status === 'pending') return 'بيرفع آخر تعديل…';
+    return 'متصلة ✓ · كود العيلة: ' + cfg.code + ' · آخر مزامنة: ' + timeStr(st.at);
+  }
+
+  function syncStatusHTML() {
+    var extra = (window.WasilaSync && WasilaSync.isOn())
+      ? ' <span style="opacity:.55">(نسخة ' + WasilaSync.status().v + ')</span>' : '';
+    return esc(syncStateText()) + extra;
+  }
+
+  function syncCardHTML() {
+    var cfg = (window.WasilaSync && WasilaSync.config()) || { url: '', code: '' };
+    return '<div class="card">' +
+      '<div class="row"><h3>المزامنة بين التليفونات</h3><span class="spacer"></span></div>' +
+      '<div id="syncStatus" style="font-size:12px;line-height:1.7;opacity:.85">' + syncStatusHTML() + '</div>' +
+      '<input type="text" id="syncUrl" placeholder="رابط السيرفر (Worker)" value="' + esc(cfg.url) + '">' +
+      '<div class="row">' +
+      '<input type="text" id="syncCode" placeholder="كود العيلة" value="' + esc(cfg.code) + '" style="max-width:190px">' +
+      '<button class="mini" id="syncGen">كود جديد</button>' +
+      '</div>' +
+      '<div class="row">' +
+      '<button class="mini strong" id="syncSave">تشغيل المزامنة</button>' +
+      '<button class="mini" id="syncNow">زامن دلوقتي</button>' +
+      '<button class="mini" id="syncLink">نسخ لينك الإعداد</button>' +
+      '<button class="mini" id="syncOff">إيقاف</button>' +
+      '</div>' +
+      '<div class="row"><button class="mini" id="syncUndo">رجوع خطوة</button>' +
+      '<span style="font-size:12px;opacity:.6">بيرجّع آخر نسخة قبل آخر تعديل</span></div>' +
+      '</div>';
+  }
+
+  function updateSyncUI() {
+    var box = document.getElementById('syncStatus');
+    if (box) box.innerHTML = syncStatusHTML();
+  }
+
+  function initSync() {
+    if (!window.WasilaSync) return;
+    WasilaSync.init({
+      getLocal: function () { return data; },
+      onRemote: function (remote) { applyRemote(remote); },
+      onStatus: function () { updateSyncUI(); }
+    });
+    if (WasilaSync.isOn()) WasilaSync.start();
   }
 
   /* ------------------------------ مودال تعديل عنصر */
@@ -1124,6 +1306,7 @@
   render();
   keepAwake();
   registerSW();
+  initSync();
   maybeUpgrade();
 
   /* للاختبار: نصدّر شوية حاجات */

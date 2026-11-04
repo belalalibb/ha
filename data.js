@@ -17,7 +17,15 @@
    ملاحظة: "nurse: true" معناها "اسأل التمريض الأول" — بتظهر علامة 🩺
    ============================================================ */
 window.APP_DATA = {
-  meta: { version: 2, updated: '2026-11-04', perScreen: 4 },
+  meta: {
+    version: 2,
+    updated: '2026-11-04',
+    perScreen: 4,
+    /* رابط سيرفر المزامنة (Cloudflare Worker).
+       لو حطيته هنا: أي تليفون بيفتح الموقع هياخد نفس البيانات بكود العيلة بس.
+       مثال: sync: 'https://wasila-sync.username.workers.dev', */
+    sync: ''
+  },
   sections: [
     {
       id: 'waga',
