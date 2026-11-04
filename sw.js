@@ -1,5 +1,5 @@
 /* وسيلة — Service Worker بسيط: تخزين الملفات عشان تفتح من غير نت */
-var CACHE = 'wasila-v1';
+var CACHE = 'wasila-v2';
 var FILES = [
   './',
   './index.html',

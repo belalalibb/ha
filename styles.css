@@ -614,6 +614,19 @@ textarea.mini {
 .icon-grid button .ic { width: 100%; height: 100%; }
 .icon-grid button.on { border-color: var(--fg); background: var(--soft); }
 
+
+/* إدخال ملف مخفي بصريًا لكن بيفتح عادي على الموبايل */
+.file-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#mPreview { align-items: center; }
+
 /* ======================= لمس أسهل للجميع ======================= */
 @media (pointer: coarse) {
   .btn, .mini { border-width: max(3px, .5vmin); }

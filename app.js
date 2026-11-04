@@ -212,7 +212,8 @@
   }
 
   /* كل الصيغ مدعومة: png · jpg · webp · gif · svg · avif · bmp · heic · ico ...
-     الصور الكبيرة بتتصغّر تلقائيًا عشان التطبيق يفضل خفيف */
+     الصور الكبيرة بتتصغّر تلقائيًا عشان التطبيق يفضل خفيف على تليفون قديم
+     cb(info, err) — info = { url, w, h, kb, kind, note } */
   function processImage(file, cb) {
     if (!file) return cb(null, 'مفيش ملف');
     var name = String(file.name || '').toLowerCase();
@@ -220,7 +221,7 @@
     var isImage = type.indexOf('image') === 0 ||
       /\.(png|jpe?g|webp|gif|svg|avif|bmp|ico|heic|heif|tiff?|jfif|pjpeg|apng)$/.test(name);
     if (!isImage) return cb(null, 'الملف ده مش صورة');
-    if (file.size > 15 * 1024 * 1024) return cb(null, 'الصورة كبيرة جدًا (أكبر من ١٥ ميجा)');
+    if (file.size > 15 * 1024 * 1024) return cb(null, 'الصورة كبيرة جدًا (أكبر من ١٥ ميجا)');
 
     var fr = new FileReader();
     fr.onerror = function () { cb(null, 'مش قادر أقرا الملف'); };
@@ -229,16 +230,39 @@
       var isVector = type.indexOf('svg') > -1 || /\.svg$/.test(name);
       var isAnimated = type.indexOf('gif') > -1 || /\.gif$/.test(name);
 
+      var finished = false;
+      var guard = null;
+
+      /* أي صورة متجهز، بنرجع الأصل — عشان الشاشة ما تفضلش معلقة على «بنجهز…» */
+      function finish(url, w, h, kind) {
+        if (finished) return;
+        finished = true;
+        if (guard) clearTimeout(guard);
+        cb({ url: url, w: w || 0, h: h || 0, kb: Math.round((url.length * 0.75) / 1024), kind: kind }, null);
+      }
+
       /* SVG و GIF بنسيبهم زي ما هم (عشان ميتحولوش لصورة ثابتة) */
-      if (isVector || isAnimated) return cb(dataUrl, null);
-      if (dataUrl.length < 60 * 1024) return cb(dataUrl, null);   /* صغيرة خلاص */
+      if (isVector) return finish(dataUrl, 0, 0, 'vector');
+      if (isAnimated) return finish(dataUrl, 0, 0, 'animated');
+
+      /* شبكة أمان: لو المتصفح اتأخر أو رفض يفك الصورة، بنحفظ الأصل بعد ٣ ثواني */
+      guard = setTimeout(function () { finish(dataUrl, 0, 0, 'photo'); }, 3000);
+
+      /* صورة صغيرة أصلاً — مفيش داعي نلمسها */
+      if (dataUrl.length < 60 * 1024) {
+        var quick = new Image();
+        quick.onload = function () { finish(dataUrl, quick.naturalWidth, quick.naturalHeight, 'photo'); };
+        quick.onerror = function () { finish(dataUrl, 0, 0, 'photo'); };
+        quick.src = dataUrl;
+        return;
+      }
 
       var im = new Image();
       im.onload = function () {
         var max = 900;
         var w = im.naturalWidth || im.width;
         var h = im.naturalHeight || im.height;
-        if (!w || !h) return cb(dataUrl, null);
+        if (!w || !h) return finish(dataUrl, 0, 0, 'photo');
         var k = Math.min(1, max / Math.max(w, h));
         var cw = Math.max(1, Math.round(w * k));
         var ch = Math.max(1, Math.round(h * k));
@@ -254,14 +278,16 @@
           if (!out || out.indexOf('data:image/webp') !== 0) {
             try { out = c.toDataURL('image/jpeg', 0.82); } catch (e2) { out = ''; }
           }
-          if (!out) return cb(dataUrl, null);
-          cb(out.length < dataUrl.length ? out : dataUrl, null);
+          if (!out) return finish(dataUrl, w, h, 'photo');
+          if (out.length >= dataUrl.length) return finish(dataUrl, w, h, 'photo');
+          return finish(out, cw, ch, 'photo');
         } catch (e3) {
-          cb(dataUrl, null);
+          /* مفيش canvas (متصفح قديم جدًا) → بنسيب الأصل وبيتحفظ عادي */
+          return finish(dataUrl, w, h, 'photo');
         }
       };
-      /* صيغة المتصفح مش فاهمها (زي HEIC على أندرويد) — بنسيب الأصل ولو مش هيتعرض هيظهر بدالها الأيقونة */
-      im.onerror = function () { cb(dataUrl, null); };
+      /* صيغة المتصفح مش فاهمها (زي HEIC على أندرويد) — بنسيب الأصل ولو مش هيتعرض تظهر الأيقونة */
+      im.onerror = function () { finish(dataUrl, 0, 0, 'unsupported'); };
       im.src = dataUrl;
     };
     fr.readAsDataURL(file);
@@ -700,12 +726,14 @@
       '</div>' +
       '<div style="font-size:13px;opacity:.75;margin-top:6px">صورة (اختياري) — بتاخد مكان الأيقونة</div>' +
       '<div class="row">' +
-      '<label class="mini strong" style="cursor:pointer">رفع صورة من الجهاز' +
-      '<input type="file" id="mFile" hidden accept="image/*,.png,.jpg,.jpeg,.jfif,.webp,.gif,.svg,.avif,.bmp,.ico,.heic,.heif,.tif,.tiff,.apng">' +
-      '</label>' +
-      '<button class="mini danger" id="mImgClear">مسح الصورة</button>' +
-      '<span class="spacer"></span><span id="mImgNote" style="font-size:12px;opacity:.7"></span>' +
+      '<button type="button" class="mini strong" id="mPick">صورة من التليفون</button>' +
+      '<button type="button" class="mini" id="mCam">كاميرا</button>' +
+      '<button type="button" class="mini danger" id="mImgClear">مسح الصورة</button>' +
       '</div>' +
+      '<div id="mImgNote" style="font-size:12px;opacity:.75"></div>' +
+      '<input type="file" id="mFile" class="file-hidden" ' +
+      'accept="image/*,.png,.jpg,.jpeg,.jfif,.webp,.gif,.svg,.avif,.bmp,.ico,.heic,.heif,.tif,.tiff,.apng">' +
+      '<input type="file" id="mCamFile" class="file-hidden" accept="image/*" capture="environment">' +
       '<input type="text" id="mImgPath" placeholder="أو مسار/رابط: images/water.jpg" value="' +
         esc(cur.img && cur.img.indexOf('data:') !== 0 ? cur.img : '') + '">' +
       '<div id="mPreview" class="row"></div>' +
@@ -726,6 +754,7 @@
 
     /* -------- الصورة -------- */
     var imgVal = cur.img || '';
+    var imgMeta = '';   /* «٩٠٠×٦٧٥ · ٩٦ كيلو» */
 
     function drawPreview() {
       var box = document.getElementById('mPreview');
@@ -735,30 +764,50 @@
         note.textContent = '';
         return;
       }
-      box.innerHTML = '<img class="photo thumb-big" src="' + esc(imgVal) + '" alt="">';
-      note.textContent = imgSize(imgVal);
+      box.innerHTML = '<img class="photo thumb-big" src="' + esc(imgVal) + '" alt="">' +
+        '<span style="font-size:12px;opacity:.75;align-self:center">✔ الصورة جاهزة</span>';
+      note.textContent = imgMeta || imgSize(imgVal);
     }
 
     drawPreview();
 
-    document.getElementById('mFile').addEventListener('change', function (e) {
+    function takeFile(e) {
       var f = e.target.files && e.target.files[0];
       if (!f) return;
-      document.getElementById('mImgNote').textContent = 'بنجهز الصورة…';
-      processImage(f, function (dataUrl, err) {
-        if (err || !dataUrl) {
+      document.getElementById('mImgNote').textContent = 'بنجهز الصورة… (ثانية واحدة)';
+      processImage(f, function (info, err) {
+        if (e.target) e.target.value = '';   /* عشان لو اختار نفس الصورة تاني */
+        if (err || !info) {
           notify(err || 'مش قادر أجهز الصورة');
           drawPreview();
           return;
         }
-        imgVal = dataUrl;
+        imgVal = info.url;
+        imgMeta = info.kind === 'unsupported'
+          ? '⚠ الصيغة دي مش بتتعرض على المتصفح ده — الأفضل PNG أو JPG (وإلا هتظهر الأيقونة)'
+          : (info.w ? info.w + '×' + info.h + ' · ' : '') +
+            (info.kb < 1 ? 'حجم صغير' : info.kb + ' كيلو') +
+            (info.kind === 'vector' ? ' · SVG' : info.kind === 'animated' ? ' · GIF' : '');
         document.getElementById('mImgPath').value = '';
         drawPreview();
       });
+    }
+
+    document.getElementById('mFile').addEventListener('change', takeFile);
+    document.getElementById('mCamFile').addEventListener('change', takeFile);
+
+    /* أزرار حقيقية + click() برمجي = أضمن حاجة على أندرويد القديم وآيفون */
+    document.getElementById('mPick').addEventListener('click', function () {
+      document.getElementById('mFile').click();
+    });
+    document.getElementById('mCam').addEventListener('click', function () {
+      var c = document.getElementById('mCamFile');
+      if (c) c.click(); else document.getElementById('mFile').click();
     });
 
     document.getElementById('mImgClear').addEventListener('click', function () {
       imgVal = '';
+      imgMeta = '';
       document.getElementById('mImgPath').value = '';
       drawPreview();
     });
