@@ -17,7 +17,7 @@
    ملاحظة: "nurse: true" معناها "اسأل التمريض الأول" — بتظهر علامة 🩺
    ============================================================ */
 window.APP_DATA = {
-  meta: { version: 1, updated: '2026-11-04', perScreen: 4 },
+  meta: { version: 2, updated: '2026-11-04', perScreen: 4 },
   sections: [
     {
       id: 'waga',
@@ -92,8 +92,6 @@ window.APP_DATA = {
       icon: 'toilet',
       options: [
         { label: 'عايز حمام', icon: 'toilet', nurse: true },
-        { label: 'قعدة البوتي', icon: 'bed', nurse: true },
-        { label: 'غير الحفاض', icon: 'bed', nurse: true },
         { label: 'ريحة وحشة', icon: 'alert' }
       ]
     },

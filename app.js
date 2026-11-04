@@ -8,7 +8,7 @@
   'use strict';
 
   /* ------------------------------ مفاتيح التخزين */
-  var VERSION = 'v5';
+  var VERSION = 'v6';
   var DATA_KEY = 'wasila.data.v1';
   var SET_KEY = 'wasila.set.v1';
   var LOG_KEY = 'wasila.log.v1';
@@ -859,6 +859,46 @@
     });
   }
 
+  /* ------------------------------ تحديث الأقسام من الريبو */
+  /* لو نسخة data.js في الريبو أحدث من اللي متخزنة على التليفون، بنسأل مرة واحدة */
+  function maybeUpgrade() {
+    var bundled = (window.APP_DATA.meta && window.APP_DATA.meta.version) || 1;
+    var mine = (data.meta && data.meta.version) || 1;
+    if (mine >= bundled) return;
+
+    closeModal();
+    var wrap = document.createElement('div');
+    wrap.className = 'modal-wrap';
+    wrap.innerHTML =
+      '<div class="modal">' +
+      '<h3>فيه تحديث في الأقسام</h3>' +
+      '<div style="font-size:14px;line-height:1.8">' +
+      'الأقسام اللي في الموقع اتغيّرت (شيلنا/عدّلنا خيارات).<br>' +
+      'لو دوست «حدّث» هترجع للأقسام الأصلية — <b>وأي خيار أو صورة ضفتها من التليفون ده هتتشال</b>.' +
+      '</div>' +
+      '<div class="row"><button class="mini strong" id="upYes">حدّث الأقسام</button>' +
+      '<span class="spacer"></span><button class="mini" id="upNo">سيب اللي عندي</button></div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+    modal = wrap;
+
+    document.getElementById('upYes').addEventListener('click', function () {
+      data = clone(window.APP_DATA);
+      state.stack = [];
+      state.page = 0;
+      saveData();
+      closeModal();
+      render();
+    });
+
+    document.getElementById('upNo').addEventListener('click', function () {
+      data.meta = data.meta || {};
+      data.meta.version = bundled;
+      saveData();
+      closeModal();
+    });
+  }
+
   /* ------------------------------ تنبيه بسيط */
   function notify(msg) {
     closeModal();
@@ -1084,6 +1124,7 @@
   render();
   keepAwake();
   registerSW();
+  maybeUpgrade();
 
   /* للاختبار: نصدّر شوية حاجات */
   window.__wasila = {
