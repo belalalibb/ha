@@ -8,6 +8,7 @@
   'use strict';
 
   /* ------------------------------ مفاتيح التخزين */
+  var VERSION = 'v5';
   var DATA_KEY = 'wasila.data.v1';
   var SET_KEY = 'wasila.set.v1';
   var LOG_KEY = 'wasila.log.v1';
@@ -509,9 +510,16 @@
       '<span class="spacer"></span>' +
       '<button class="mini strong" id="helpFam">وضع الأسرة</button>' +
       '<button class="mini" id="helpClose">قفل</button>' +
-      '</div></div>');
+      '</div>' +
+      '<div class="row" style="font-size:12px;opacity:.7">' +
+      '<span>الإصدار ' + VERSION + '</span>' +
+      '<span class="spacer"></span>' +
+      '<button class="mini" id="helpUpd">تحديث النسخة</button>' +
+      '</div>' +
+      '</div>');
 
     document.getElementById('helpClose').addEventListener('click', closeOverlay);
+    document.getElementById('helpUpd').addEventListener('click', hardRefresh);
     document.getElementById('helpDark').addEventListener('click', function () {
       settings.dark = !settings.dark;
       applySettings();
@@ -541,7 +549,9 @@
     if (!overlay) { makeOverlay('', ''); }
     var stats = topStats();
     var html = '<div class="sheet">' +
-      '<div class="row"><h2>وضع الأسرة</h2><span class="spacer"></span>' +
+      '<div class="row"><h2>وضع الأسرة</h2>' +
+      '<span style="font-size:12px;opacity:.6">' + VERSION + '</span>' +
+      '<span class="spacer"></span>' +
       '<button class="mini" id="famClose">قفل</button></div>' +
 
       '<div class="card">' +
@@ -718,25 +728,21 @@
       '<div class="modal">' +
       '<h3>' + esc(title) + '</h3>' +
       '<input type="text" id="mLabel" placeholder="الاسم (مثال: حران)" value="' + esc(cur.label) + '">' +
-      '<div style="font-size:13px;opacity:.75">الأيقونة</div>' +
+      '<div style="font-size:13px;opacity:.75">الأيقونة أو الصورة</div>' +
       '<div class="icon-grid" id="mIcons">' +
+      /* أول خانتين: صورة من التليفون + كاميرا (جوّه الشبكة نفسها) */
+      '<button type="button" class="ph" id="mPick" aria-label="صورة من التليفون"><span class="ph-lab">صورة</span></button>' +
+      '<button type="button" class="ph" id="mCam" aria-label="كاميرا"><span class="ph-lab">كاميرا</span></button>' +
       window.ICON_PICKER.map(function (n) {
-        return '<button data-ic="' + n + '" class="' + (n === picked ? 'on' : '') + '">' + icon(n) + '</button>';
+        return '<button type="button" data-ic="' + n + '" class="' + (n === picked ? 'on' : '') + '">' + icon(n) + '</button>';
       }).join('') +
-      '</div>' +
-      '<div style="font-size:13px;opacity:.75;margin-top:6px">صورة (اختياري) — بتاخد مكان الأيقونة</div>' +
-      '<div class="row">' +
-      '<button type="button" class="mini strong" id="mPick">صورة من التليفون</button>' +
-      '<button type="button" class="mini" id="mCam">كاميرا</button>' +
-      '<button type="button" class="mini danger" id="mImgClear">مسح الصورة</button>' +
       '</div>' +
       '<div id="mImgNote" style="font-size:12px;opacity:.75"></div>' +
       '<input type="file" id="mFile" class="file-hidden" ' +
       'accept="image/*,.png,.jpg,.jpeg,.jfif,.webp,.gif,.svg,.avif,.bmp,.ico,.heic,.heif,.tif,.tiff,.apng">' +
       '<input type="file" id="mCamFile" class="file-hidden" accept="image/*" capture="environment">' +
-      '<input type="text" id="mImgPath" placeholder="أو مسار/رابط: images/water.jpg" value="' +
+      '<input type="text" id="mImgPath" placeholder="أو مسار صورة في الريبو: images/water.jpg" value="' +
         esc(cur.img && cur.img.indexOf('data:') !== 0 ? cur.img : '') + '">' +
-      '<div id="mPreview" class="row"></div>' +
       '<label><input type="checkbox" id="mNurse"' + (cur.nurse ? ' checked' : '') + '> محتاج موافقة تمريض</label>' +
       '<div class="row"><button class="mini strong" id="mSave">حفظ</button>' +
       '<span class="spacer"></span><button class="mini" id="mCancel">إلغاء</button></div>' +
@@ -744,10 +750,10 @@
     document.body.appendChild(wrap);
     modal = wrap;
 
-    wrap.querySelectorAll('#mIcons button').forEach(function (b) {
+    wrap.querySelectorAll('#mIcons button[data-ic]').forEach(function (b) {
       b.addEventListener('click', function () {
         picked = b.getAttribute('data-ic');
-        wrap.querySelectorAll('#mIcons button').forEach(function (x) { x.classList.remove('on'); });
+        wrap.querySelectorAll('#mIcons button[data-ic]').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on');
       });
     });
@@ -757,16 +763,27 @@
     var imgMeta = '';   /* «٩٠٠×٦٧٥ · ٩٦ كيلو» */
 
     function drawPreview() {
-      var box = document.getElementById('mPreview');
+      var btn = document.getElementById('mPick');
       var note = document.getElementById('mImgNote');
+      if (!btn) return;
       if (!imgVal) {
-        box.innerHTML = '<span style="font-size:12px;opacity:.6">مفيش صورة — هتظهر الأيقونة.</span>';
+        btn.innerHTML = '<span class="ph-lab">صورة</span>';
+        btn.classList.remove('on');
         note.textContent = '';
         return;
       }
-      box.innerHTML = '<img class="photo thumb-big" src="' + esc(imgVal) + '" alt="">' +
-        '<span style="font-size:12px;opacity:.75;align-self:center">✔ الصورة جاهزة</span>';
-      note.textContent = imgMeta || imgSize(imgVal);
+      btn.innerHTML = '<img src="' + esc(imgVal) + '" alt="">' +
+        '<span class="ph-x" id="mImgX" role="button" aria-label="مسح الصورة">×</span>';
+      btn.classList.add('on');
+      note.textContent = '✔ الصورة جاهزة' + (imgMeta || imgSize(imgVal) ? ' — ' + (imgMeta || imgSize(imgVal)) : '');
+      var x = document.getElementById('mImgX');
+      if (x) x.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        imgVal = '';
+        imgMeta = '';
+        document.getElementById('mImgPath').value = '';
+        drawPreview();
+      });
     }
 
     drawPreview();
@@ -805,11 +822,16 @@
       if (c) c.click(); else document.getElementById('mFile').click();
     });
 
-    document.getElementById('mImgClear').addEventListener('click', function () {
-      imgVal = '';
-      imgMeta = '';
-      document.getElementById('mImgPath').value = '';
-      drawPreview();
+    /* اختيار أيقونة = بيستخدم الأيقونة بدل الصورة (الصورة بتتشال) */
+    wrap.querySelectorAll('#mIcons button[data-ic]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (imgVal) {
+          imgVal = '';
+          imgMeta = '';
+          document.getElementById('mImgPath').value = '';
+          drawPreview();
+        }
+      });
     });
 
     document.getElementById('mCancel').addEventListener('click', closeModal);
@@ -1014,11 +1036,41 @@
     });
   }
 
+  /* مسح الكاش + إلغاء الـ Service Worker + إعادة تحميل: يضمن إنك على آخر نسخة */
+  function hardRefresh() {
+    function reload() { location.reload(); }
+    try {
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }).then(function () {
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            return navigator.serviceWorker.getRegistrations().then(function (rs) {
+              return Promise.all(rs.map(function (r) { return r.unregister(); }));
+            });
+          }
+        }).then(reload).catch(reload);
+        return;
+      }
+    } catch (e) { /* تجاهل */ }
+    reload();
+  }
+
   function registerSW() {
     if (!('serviceWorker' in navigator)) return;
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+    var hadController = !!navigator.serviceWorker.controller;
+    var reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      /* نسخة جديدة مسكت — بنعمل تحديث مرة واحدة بس ومش أول زيارة */
+      if (!hadController || reloaded) return;
+      reloaded = true;
+      location.reload();
+    });
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function () { });
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
+        if (reg && reg.update) reg.update();
+      }).catch(function () { });
     });
   }
 

@@ -627,6 +627,55 @@ textarea.mini {
 
 #mPreview { align-items: center; }
 
+
+/* خانتا الصورة والكاميرا جوّه شبكة الأيقونات */
+.icon-grid button.ph {
+  position: relative;
+  flex-direction: column;
+  gap: .15em;
+  padding: 4px;
+  border: 2px dashed var(--fg);
+  background: var(--bg);
+}
+
+.icon-grid button.ph .ph-lab {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.02em;
+}
+
+.icon-grid button.ph img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: .4em;
+}
+
+.icon-grid button.ph.on {
+  border-style: solid;
+  border-width: 3px;
+  background: var(--soft);
+  padding: 2px;
+}
+
+.icon-grid button.ph .ph-x {
+  position: absolute;
+  top: -7px;
+  inset-inline-start: -7px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fg);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+}
+
 /* ======================= لمس أسهل للجميع ======================= */
 @media (pointer: coarse) {
   .btn, .mini { border-width: max(3px, .5vmin); }
